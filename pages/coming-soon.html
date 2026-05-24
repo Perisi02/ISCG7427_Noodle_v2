@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noodle — Coming soon</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <nav class="nav">
+        <a href="../index.html" class="nav-logo">
+            <div class="nav-logo-icon">N</div>
+            <div class="nav-logo-text">
+                <strong>Noodle</strong>
+                <span>Your learning, organised</span>
+            </div>
+        </a>
+        <div class="nav-links" id="nav-links"></div>
+        <div class="nav-right" id="nav-right"></div>
+    </nav>
+
+    <div class="page" style="display:flex;align-items:center;justify-content:center;">
+        <div style="text-align:center;max-width:400px;padding:40px 24px;">
+            <div
+                style="width:64px;height:64px;background:var(--primary-light);border-radius:var(--radius-xl);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+                <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="var(--primary-dark)"
+                    stroke-width="1.6">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+            </div>
+            <h1 style="font-size:22px;font-weight:600;margin-bottom:8px;" id="page-title">Coming in the next sprint</h1>
+            <p style="font-size:14px;color:var(--text-secondary);line-height:1.6;margin-bottom:28px;">This page is
+                planned and will be built in an upcoming sprint. Check back soon!</p>
+            <button class="btn btn-primary" onclick="history.back()">← Go back</button>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        const session = requireAuth();
+        buildNav('');
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('page')) {
+            document.getElementById('page-title').textContent = params.get('page') + ' — coming in the next sprint';
+        }
+    </script>
+</body>
+
+</html>
