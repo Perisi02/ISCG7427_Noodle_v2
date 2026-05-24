@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noodle — Course</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <nav class="nav">
+        <a href="../index.html" class="nav-logo">
+            <div class="nav-logo-icon">N</div>
+            <div class="nav-logo-text">
+                <strong>Noodle</strong>
+                <span>Your learning, organised</span>
+            </div>
+        </a>
+        <div class="nav-links" id="nav-links"></div>
+        <div class="nav-right" id="nav-right"></div>
+    </nav>
+
+    <div class="layout-with-sidebar">
+
+        <aside class="sidebar">
+            <div class="sidebar-section-title">Course topics</div>
+            <div id="topic-sidebar"></div>
+
+            <div class="sidebar-section-title">Accessibility</div>
+            <button class="sidebar-link" onclick="changeTextSize(-10)">A- Decrease text</button>
+            <button class="sidebar-link" onclick="resetTextSize()">Reset text size</button>
+            <button class="sidebar-link" onclick="changeTextSize(10)">A+ Increase text</button>
+            <button class="sidebar-link" onclick="toggleDarkMode()">Toggle dark mode</button>
+        </aside>
+
+        <main class="main-content">
+
+            <div class="hero-banner">
+                <div
+                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;opacity:0.75;margin-bottom:8px;">
+                    Student course page
+                </div>
+                <h1 id="course-title" style="font-size:30px;font-weight:600;margin-bottom:8px;">Course</h1>
+                <p id="course-description" style="opacity:0.85;font-size:14px;max-width:560px;line-height:1.6;"></p>
+            </div>
+
+            <div class="card" style="padding:20px;margin-bottom:24px;">
+                <div class="section-label">Search topics</div>
+                <div class="flex gap-12" style="align-items:flex-start;">
+                    <input class="form-input" id="topic-search" type="text"
+                        placeholder="Search for a topic, lesson, or keyword…" oninput="searchTopics()"
+                        style="max-width:420px;margin-bottom:0;">
+                    <button class="btn btn-outline" onclick="clearSearch()">Clear</button>
+                </div>
+                <div id="search-results" style="margin-top:14px;"></div>
+            </div>
+
+            <div id="topics-area"></div>
+
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="preview-modal">
+        <div class="modal" style="max-width:560px;">
+            <div class="modal-title" id="preview-title">Resource preview</div>
+            <div class="modal-subtitle" id="preview-type">Resource type</div>
+
+            <div id="preview-body"></div>
+
+            <div class="flex gap-12" style="justify-content:flex-end;margin-top:24px;">
+                <button class="btn btn-ghost" onclick="closePreview()">Close</button>
+                <a class="btn btn-primary" id="open-resource-link" href="#" target="_blank">Open resource</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        const session = requireAuth(['student']);
+        buildNav('courses');
+
+        const params = new URLSearchParams(window.location.search);
+        const courseId = params.get('id') || 'c1';
+
+        let courses = getCourses();
+        let resources = getResources();
+        const course = courses.find(c => c.id === courseId);
+
+        if (!course || !course.published || !session.enrolled || !session.enrolled.includes(course.id)) {
+            document.querySelector('.main-content').innerHTML = `
+        <div class="placeholder-page">
+          <h2>Course unavailable</h2>
+          <p>You are not enrolled in this course or the course has not been published yet.</p>
+          <a href="student-home.html" class="btn btn-primary">Back to home</a>
+        </div>`;
+        } else {
+            document.getElementById('course-title').textContent = `${course.code} — ${course.name}`;
+            document.getElementById('course-description').textContent = course.description;
+
+            renderSidebar();
+            renderTopics();
+        }
+
+        function renderSidebar(activeTopicId = null) {
+            const sidebar = document.getElementById('topic-sidebar');
+            sidebar.innerHTML = course.topics.map(topic => `
+        <a class="sidebar-link ${activeTopicId === topic.id ? 'active' : ''}" href="#${topic.id}" onclick="setActiveTopic('${topic.id}')">
+          ${topic.title}
+        </a>
+      `).join('');
+        }
+
+        function setActiveTopic(topicId) {
+            renderSidebar(topicId);
+        }
+
+        function renderTopics() {
+            const topicsArea = document.getElementById('topics-area');
+
+            topicsArea.innerHTML = course.topics.map(topic => {
+                const topicResources = resources.filter(r => r.courseId === course.id && r.topicId === topic.id);
+
+                return `
+          <section class="card topic-section" id="${topic.id}" style="padding:24px;margin-bottom:20px;">
+            <div class="flex-between" style="align-items:flex-start;margin-bottom:14px;">
+              <div>
+                <div class="section-label">Topic</div>
+                <h2 class="section-title">${topic.title}</h2>
+              </div>
+              <span class="badge badge-gray">${topicResources.length} resource${topicResources.length === 1 ? '' : 's'}</span>
+            </div>
+
+            <div class="topic-summary">
+              ${formatSummary(topic.summary)}
+            </div>
+
+            <div style="margin-top:20px;">
+              <div class="section-label">Resources</div>
+              ${topicResources.length > 0 ? renderResources(topicResources) : `
+                <div class="alert alert-info" style="margin-bottom:0;">
+                  No resources have been added for this topic yet.
+                </div>
+              `}
+            </div>
+          </section>
+        `;
+            }).join('');
+        }
+
+        function renderResources(topicResources) {
+            return `
+        <div style="display:grid;gap:12px;">
+          ${topicResources.map(resource => `
+            <div class="resource-card ${resource.important ? 'resource-important' : ''}">
+              <div style="flex:1;">
+                <div class="flex-center gap-8" style="margin-bottom:4px;flex-wrap:wrap;">
+                  <strong>${resource.title}</strong>
+                  <span class="badge badge-blue">${resource.type.toUpperCase()}</span>
+                  ${resource.important ? '<span class="badge badge-amber">Important</span>' : ''}
+                </div>
+                <p class="text-sm text-muted">${resource.description || 'No description provided.'}</p>
+              </div>
+              <div class="flex gap-8">
+                <button class="btn btn-outline btn-sm" onclick="openPreview('${resource.id}')">Preview</button>
+                <a class="btn btn-primary btn-sm" href="${resource.url || '#'}" target="_blank">Open</a>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+        }
+
+        function formatSummary(summary) {
+            if (!summary) {
+                return '<p class="text-muted">No topic summary has been added yet.</p>';
+            }
+
+            // Allows saved lecturer formatting while still displaying plain text summaries cleanly.
+            if (summary.includes('<')) {
+                return summary;
+            }
+
+            return `<p>${summary}</p>`;
+        }
+
+        function searchTopics() {
+            const keyword = document.getElementById('topic-search').value.trim().toLowerCase();
+            const resultsArea = document.getElementById('search-results');
+
+            if (!keyword) {
+                resultsArea.innerHTML = '';
+                return;
+            }
+
+            const matches = course.topics.filter(topic => {
+                const topicResources = resources.filter(r => r.topicId === topic.id);
+                const resourceText = topicResources.map(r => `${r.title} ${r.description} ${r.type}`).join(' ');
+                const combined = `${topic.title} ${topic.summary} ${course.code} ${course.name} ${resourceText}`.toLowerCase();
+                return combined.includes(keyword);
+            });
+
+            if (matches.length === 0) {
+                resultsArea.innerHTML = `<div class="alert alert-info" style="margin-bottom:0;">No results found for "${keyword}".</div>`;
+                return;
+            }
+
+            resultsArea.innerHTML = `
+        <div style="display:grid;gap:8px;">
+          ${matches.map(topic => `
+            <button class="search-result" onclick="openSearchResult('${topic.id}')">
+              <strong>${topic.title}</strong>
+              <span>${course.code} · ${course.name}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+        }
+
+        function openSearchResult(topicId) {
+            document.getElementById(topicId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setActiveTopic(topicId);
+        }
+
+        function clearSearch() {
+            document.getElementById('topic-search').value = '';
+            document.getElementById('search-results').innerHTML = '';
+        }
+
+        function openPreview(resourceId) {
+            const resource = resources.find(r => r.id === resourceId);
+            if (!resource) return;
+
+            document.getElementById('preview-title').textContent = resource.title;
+            document.getElementById('preview-type').textContent = `${resource.type.toUpperCase()} resource preview`;
+
+            const hasPreview = ['pdf', 'slides', 'video', 'link'].includes(resource.type);
+
+            document.getElementById('preview-body').innerHTML = `
+        <div class="preview-box">
+          <div class="flex-center gap-8" style="margin-bottom:10px;">
+            <span class="badge badge-blue">${resource.type.toUpperCase()}</span>
+            ${resource.important ? '<span class="badge badge-amber">Important</span>' : ''}
+          </div>
+
+          <p style="margin-bottom:12px;">${resource.description || 'No description has been provided for this resource.'}</p>
+
+          ${hasPreview ? `
+            <div class="alert alert-info" style="margin-bottom:0;">
+              Preview available for this demo: title, description, type, and importance status are shown before opening the resource.
+            </div>
+          ` : `
+            <div class="alert alert-info" style="margin-bottom:0;">
+              Preview unavailable for this resource type, but the resource can still be opened or downloaded.
+            </div>
+          `}
+        </div>
+      `;
+
+            document.getElementById('open-resource-link').href = resource.url || '#';
+            document.getElementById('preview-modal').classList.add('open');
+        }
+
+        function closePreview() {
+            document.getElementById('preview-modal').classList.remove('open');
+        }
+
+        document.getElementById('preview-modal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closePreview();
+        });
+
+        function changeTextSize(amount) {
+            const current = parseInt(localStorage.getItem('noodle_text_size') || '100');
+            const next = Math.max(80, Math.min(140, current + amount));
+            localStorage.setItem('noodle_text_size', String(next));
+            applyTextSize();
+        }
+
+        function resetTextSize() {
+            localStorage.setItem('noodle_text_size', '100');
+            applyTextSize();
+        }
+
+        function toggleDarkMode() {
+            const current = localStorage.getItem('noodle_dark_mode') === 'true';
+            localStorage.setItem('noodle_dark_mode', String(!current));
+            applyDarkMode();
+        }
+    </script>
+</body>
+
+</html>

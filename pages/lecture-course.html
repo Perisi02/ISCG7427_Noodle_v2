@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noodle — Manage Course</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+    <nav class="nav">
+        <a href="../index.html" class="nav-logo">
+            <div class="nav-logo-icon">N</div>
+            <div class="nav-logo-text">
+                <strong>Noodle</strong>
+                <span>Your learning, organised</span>
+            </div>
+        </a>
+        <div class="nav-links" id="nav-links"></div>
+        <div class="nav-right" id="nav-right"></div>
+    </nav>
+
+    <div class="layout-with-sidebar">
+
+        <aside class="sidebar">
+            <div class="sidebar-section-title">Course topics</div>
+            <div id="topic-sidebar"></div>
+
+            <div class="sidebar-section-title">Accessibility</div>
+            <button class="sidebar-link" onclick="changeTextSize(-10)">A- Decrease text</button>
+            <button class="sidebar-link" onclick="resetTextSize()">Reset text size</button>
+            <button class="sidebar-link" onclick="changeTextSize(10)">A+ Increase text</button>
+            <button class="sidebar-link" onclick="toggleDarkMode()">Toggle dark mode</button>
+        </aside>
+
+        <main class="main-content">
+
+            <div class="hero-banner">
+                <div
+                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;opacity:0.75;margin-bottom:8px;">
+                    Lecturer course management
+                </div>
+                <h1 id="course-title" style="font-size:30px;font-weight:600;margin-bottom:8px;">Manage course</h1>
+                <p id="course-description" style="opacity:0.85;font-size:14px;max-width:560px;line-height:1.6;"></p>
+            </div>
+
+            <div class="card" style="padding:20px;margin-bottom:24px;">
+                <div class="flex-between" style="align-items:center;">
+                    <div>
+                        <div class="section-label">Course access</div>
+                        <h2 class="section-title" style="margin-bottom:2px;">Publish course content</h2>
+                        <p class="text-sm text-muted">Published course content is visible to enrolled students.</p>
+                    </div>
+                    <label class="toggle-row">
+                        <input type="checkbox" id="publish-toggle" onchange="togglePublish()">
+                        <span>Published</span>
+                    </label>
+                </div>
+                <div id="publish-alert" style="margin-top:14px;"></div>
+            </div>
+
+            <div class="card" id="upload-panel" style="padding:20px;margin-bottom:24px;">
+                <div class="section-label">Upload resource</div>
+                <h2 class="section-title">Add a resource to a topic</h2>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="resource-topic">Topic</label>
+                        <select class="form-select" id="resource-topic"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="resource-type">Resource type</label>
+                        <select class="form-select" id="resource-type">
+                            <option value="pdf">PDF</option>
+                            <option value="slides">Slides</option>
+                            <option value="video">Video</option>
+                            <option value="link">Link</option>
+                            <option value="file">File</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="resource-title">Resource title</label>
+                    <input class="form-input" id="resource-title" type="text"
+                        placeholder="Example: Topic 5 estimation slides">
+                    <span class="form-error" id="resource-title-error">Please enter a resource title.</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="resource-url">File name or link</label>
+                    <input class="form-input" id="resource-url" type="text"
+                        placeholder="Example: topic-5-slides.pdf or https://example.com">
+                    <span class="form-hint">For this demo, this field stores a file name or link rather than uploading a
+                        real file.</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="resource-description">Description</label>
+                    <textarea class="form-input" id="resource-description" rows="3"
+                        placeholder="Explain why this resource is useful for students."></textarea>
+                    <span class="form-error" id="resource-description-error">Please enter a resource description.</span>
+                </div>
+
+                <label class="toggle-row" style="margin-bottom:16px;">
+                    <input type="checkbox" id="resource-important">
+                    <span>Mark this resource as important</span>
+                </label>
+
+                <button class="btn btn-primary" onclick="saveResource()">Save resource</button>
+                <div id="resource-alert" style="margin-top:14px;"></div>
+            </div>
+
+            <div id="topics-area"></div>
+
+        </main>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        const session = requireAuth(['lecturer']);
+        buildNav('courses');
+
+        const params = new URLSearchParams(window.location.search);
+        const courseId = params.get('id') || 'c1';
+
+        let courses = getCourses();
+        let resources = getResources();
+        let course = courses.find(c => c.id === courseId);
+
+        if (!course || !session.courses || !session.courses.includes(course.id)) {
+            document.querySelector('.main-content').innerHTML = `
+        <div class="placeholder-page">
+          <h2>Course unavailable</h2>
+          <p>You do not have permission to manage this course.</p>
+          <a href="lecturer-home.html" class="btn btn-primary">Back to dashboard</a>
+        </div>`;
+        } else {
+            document.getElementById('course-title').textContent = `${course.code} — ${course.name}`;
+            document.getElementById('course-description').textContent = course.description;
+            document.getElementById('publish-toggle').checked = !!course.published;
+
+            renderTopicOptions();
+            renderSidebar();
+            renderTopics();
+        }
+
+        function refreshData() {
+            courses = getCourses();
+            resources = getResources();
+            course = courses.find(c => c.id === courseId);
+        }
+
+        function renderTopicOptions() {
+            document.getElementById('resource-topic').innerHTML = course.topics.map(t => `
+        <option value="${t.id}">${t.title}</option>
+      `).join('');
+        }
+
+        function renderSidebar(activeTopicId = null) {
+            document.getElementById('topic-sidebar').innerHTML = course.topics.map(topic => `
+        <a class="sidebar-link ${activeTopicId === topic.id ? 'active' : ''}" href="#${topic.id}" onclick="setActiveTopic('${topic.id}')">
+          ${topic.title}
+        </a>
+      `).join('');
+        }
+
+        function setActiveTopic(topicId) {
+            renderSidebar(topicId);
+        }
+
+        function renderTopics() {
+            refreshData();
+            const topicsArea = document.getElementById('topics-area');
+
+            topicsArea.innerHTML = course.topics.map(topic => {
+                const topicResources = resources.filter(r => r.courseId === course.id && r.topicId === topic.id);
+
+                return `
+          <section class="card topic-section" id="${topic.id}" style="padding:24px;margin-bottom:20px;">
+            <div class="flex-between" style="align-items:flex-start;margin-bottom:16px;">
+              <div>
+                <div class="section-label">Topic summary</div>
+                <h2 class="section-title">${topic.title}</h2>
+              </div>
+              <span class="badge badge-gray">${topicResources.length} resource${topicResources.length === 1 ? '' : 's'}</span>
+            </div>
+
+            <div class="editor-toolbar">
+              <button class="btn btn-ghost btn-sm" onclick="formatSummary('${topic.id}', 'formatBlock', 'h3')">Heading</button>
+              <button class="btn btn-ghost btn-sm" onclick="formatSummary('${topic.id}', 'bold')">Bold</button>
+              <button class="btn btn-ghost btn-sm" onclick="formatSummary('${topic.id}', 'insertUnorderedList')">Bullets</button>
+              <button class="btn btn-ghost btn-sm" onclick="addLink('${topic.id}')">Link</button>
+            </div>
+
+            <div class="summary-editor" id="summary-editor-${topic.id}" contenteditable="true">
+              ${topic.summary || ''}
+            </div>
+
+            <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveSummary('${topic.id}')">
+              Save summary
+            </button>
+
+            <div id="summary-alert-${topic.id}" style="margin-top:12px;"></div>
+
+            <div style="margin-top:24px;">
+              <div class="section-label">Resources</div>
+              ${topicResources.length > 0 ? renderResourceList(topicResources) : `
+                <div class="alert alert-info" style="margin-bottom:0;">
+                  No resources have been added for this topic yet.
+                </div>
+              `}
+            </div>
+          </section>
+        `;
+            }).join('');
+        }
+
+        function renderResourceList(topicResources) {
+            return `
+        <div style="display:grid;gap:12px;">
+          ${topicResources.map(resource => `
+            <div class="resource-card ${resource.important ? 'resource-important' : ''}">
+              <div style="flex:1;">
+                <div class="flex-center gap-8" style="margin-bottom:4px;flex-wrap:wrap;">
+                  <strong>${resource.title}</strong>
+                  <span class="badge badge-blue">${resource.type.toUpperCase()}</span>
+                  ${resource.important ? '<span class="badge badge-amber">Important</span>' : ''}
+                </div>
+                <p class="text-sm text-muted">${resource.description || 'No description provided.'}</p>
+                <p class="text-sm text-muted" style="margin-top:4px;">${resource.url && resource.url !== '#' ? resource.url : 'No file/link provided.'}</p>
+              </div>
+
+              <div class="flex gap-8" style="flex-wrap:wrap;justify-content:flex-end;">
+                <button class="btn btn-outline btn-sm" onclick="toggleImportant('${resource.id}')">
+                  ${resource.important ? 'Unmark important' : 'Mark important'}
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="editDescription('${resource.id}')">Edit description</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteResource('${resource.id}')">Delete</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+        }
+
+        function formatSummary(topicId, command, value = null) {
+            const editor = document.getElementById(`summary-editor-${topicId}`);
+            editor.focus();
+            document.execCommand(command, false, value);
+        }
+
+        function addLink(topicId) {
+            const url = prompt('Enter the link URL:');
+            if (!url) return;
+
+            const editor = document.getElementById(`summary-editor-${topicId}`);
+            editor.focus();
+            document.execCommand('createLink', false, url);
+        }
+
+        function saveSummary(topicId) {
+            const editor = document.getElementById(`summary-editor-${topicId}`);
+            const newSummary = editor.innerHTML.trim();
+
+            const courseIndex = courses.findIndex(c => c.id === course.id);
+            const topicIndex = courses[courseIndex].topics.findIndex(t => t.id === topicId);
+
+            courses[courseIndex].topics[topicIndex].summary = newSummary;
+            saveCourses(courses);
+
+            document.getElementById(`summary-alert-${topicId}`).innerHTML = `
+        <div class="alert alert-success" style="margin-bottom:0;">Topic summary saved successfully.</div>
+      `;
+
+            refreshData();
+        }
+
+        function saveResource() {
+            const topicId = document.getElementById('resource-topic').value;
+            const title = document.getElementById('resource-title').value.trim();
+            const type = document.getElementById('resource-type').value;
+            const url = document.getElementById('resource-url').value.trim() || '#';
+            const description = document.getElementById('resource-description').value.trim();
+            const important = document.getElementById('resource-important').checked;
+
+            document.getElementById('resource-title-error').classList.remove('show');
+            document.getElementById('resource-description-error').classList.remove('show');
+            document.getElementById('resource-title').classList.remove('error');
+            document.getElementById('resource-description').classList.remove('error');
+            document.getElementById('resource-alert').innerHTML = '';
+
+            let valid = true;
+
+            if (!title) {
+                document.getElementById('resource-title-error').classList.add('show');
+                document.getElementById('resource-title').classList.add('error');
+                valid = false;
+            }
+
+            if (!description) {
+                document.getElementById('resource-description-error').classList.add('show');
+                document.getElementById('resource-description').classList.add('error');
+                valid = false;
+            }
+
+            if (!valid) return;
+
+            const newResource = {
+                id: 'r' + Date.now(),
+                title,
+                type,
+                description,
+                important,
+                courseId: course.id,
+                topicId,
+                url
+            };
+
+            resources.push(newResource);
+            saveResources(resources);
+
+            const courseIndex = courses.findIndex(c => c.id === course.id);
+            const topicIndex = courses[courseIndex].topics.findIndex(t => t.id === topicId);
+            if (!courses[courseIndex].topics[topicIndex].resources) {
+                courses[courseIndex].topics[topicIndex].resources = [];
+            }
+            courses[courseIndex].topics[topicIndex].resources.push(newResource.id);
+            saveCourses(courses);
+
+            document.getElementById('resource-alert').innerHTML = `
+        <div class="alert alert-success">Resource saved and displayed under the selected topic.</div>
+      `;
+
+            document.getElementById('resource-title').value = '';
+            document.getElementById('resource-url').value = '';
+            document.getElementById('resource-description').value = '';
+            document.getElementById('resource-important').checked = false;
+
+            renderTopics();
+        }
+
+        function toggleImportant(resourceId) {
+            const index = resources.findIndex(r => r.id === resourceId);
+            if (index === -1) return;
+
+            resources[index].important = !resources[index].important;
+            saveResources(resources);
+            renderTopics();
+        }
+
+        function editDescription(resourceId) {
+            const resource = resources.find(r => r.id === resourceId);
+            if (!resource) return;
+
+            const updatedDescription = prompt('Edit resource description:', resource.description || '');
+            if (updatedDescription === null) return;
+
+            const index = resources.findIndex(r => r.id === resourceId);
+            resources[index].description = updatedDescription.trim();
+            saveResources(resources);
+            renderTopics();
+        }
+
+        function deleteResource(resourceId) {
+            if (!confirm('Delete this resource?')) return;
+
+            resources = resources.filter(r => r.id !== resourceId);
+
+            const courseIndex = courses.findIndex(c => c.id === course.id);
+            courses[courseIndex].topics = courses[courseIndex].topics.map(topic => ({
+                ...topic,
+                resources: (topic.resources || []).filter(id => id !== resourceId)
+            }));
+
+            saveResources(resources);
+            saveCourses(courses);
+            renderTopics();
+        }
+
+        function togglePublish() {
+            const checked = document.getElementById('publish-toggle').checked;
+            const courseIndex = courses.findIndex(c => c.id === course.id);
+
+            courses[courseIndex].published = checked;
+            saveCourses(courses);
+            refreshData();
+
+            document.getElementById('publish-alert').innerHTML = `
+        <div class="alert alert-success" style="margin-bottom:0;">
+          Course content is now ${checked ? 'published to enrolled students' : 'hidden from students'}.
+        </div>
+      `;
+        }
+
+        function changeTextSize(amount) {
+            const current = parseInt(localStorage.getItem('noodle_text_size') || '100');
+            const next = Math.max(80, Math.min(140, current + amount));
+            localStorage.setItem('noodle_text_size', String(next));
+            applyTextSize();
+        }
+
+        function resetTextSize() {
+            localStorage.setItem('noodle_text_size', '100');
+            applyTextSize();
+        }
+
+        function toggleDarkMode() {
+            const current = localStorage.getItem('noodle_dark_mode') === 'true';
+            localStorage.setItem('noodle_dark_mode', String(!current));
+            applyDarkMode();
+        }
+    </script>
+</body>
+
+</html>
