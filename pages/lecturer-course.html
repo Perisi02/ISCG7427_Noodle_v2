@@ -99,10 +99,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="resource-description">Description</label>
+                    <label class="form-label" for="resource-description">
+                        Description <span class="text-muted">(optional)</span>
+                    </label>
                     <textarea class="form-input" id="resource-description" rows="3"
-                        placeholder="Explain why this resource is useful for students."></textarea>
-                    <span class="form-error" id="resource-description-error">Please enter a resource description.</span>
+                        placeholder="Optional: explain why this resource is useful for students."></textarea>
+                    <span class="form-hint">Students will see this description before opening the resource if one is
+                        added.</span>
                 </div>
 
                 <label class="toggle-row" style="margin-bottom:16px;">
@@ -288,26 +291,14 @@
             const important = document.getElementById('resource-important').checked;
 
             document.getElementById('resource-title-error').classList.remove('show');
-            document.getElementById('resource-description-error').classList.remove('show');
             document.getElementById('resource-title').classList.remove('error');
-            document.getElementById('resource-description').classList.remove('error');
             document.getElementById('resource-alert').innerHTML = '';
-
-            let valid = true;
 
             if (!title) {
                 document.getElementById('resource-title-error').classList.add('show');
                 document.getElementById('resource-title').classList.add('error');
-                valid = false;
+                return;
             }
-
-            if (!description) {
-                document.getElementById('resource-description-error').classList.add('show');
-                document.getElementById('resource-description').classList.add('error');
-                valid = false;
-            }
-
-            if (!valid) return;
 
             const newResource = {
                 id: 'r' + Date.now(),
@@ -325,15 +316,19 @@
 
             const courseIndex = courses.findIndex(c => c.id === course.id);
             const topicIndex = courses[courseIndex].topics.findIndex(t => t.id === topicId);
+
             if (!courses[courseIndex].topics[topicIndex].resources) {
                 courses[courseIndex].topics[topicIndex].resources = [];
             }
+
             courses[courseIndex].topics[topicIndex].resources.push(newResource.id);
             saveCourses(courses);
 
             document.getElementById('resource-alert').innerHTML = `
-        <div class="alert alert-success">Resource saved and displayed under the selected topic.</div>
-      `;
+    <div class="alert alert-success">
+      Resource uploaded successfully. ${description ? 'The description will be shown to students.' : 'No description was added.'}
+    </div>
+  `;
 
             document.getElementById('resource-title').value = '';
             document.getElementById('resource-url').value = '';
