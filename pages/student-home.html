@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noodle — Student Home</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+  <nav class="nav">
+    <a href="../index.html" class="nav-logo">
+      <div class="nav-logo-icon">N</div>
+      <div class="nav-logo-text">
+        <strong>Noodle</strong>
+        <span>Your learning, organised</span>
+      </div>
+    </a>
+    <div class="nav-links" id="nav-links"></div>
+    <div class="nav-right" id="nav-right"></div>
+  </nav>
+
+  <div class="page" style="padding:32px;">
+    <div style="max-width:1100px;margin:0 auto;">
+
+      <!-- Hero -->
+      <div class="hero-banner" id="hero-banner"
+        style="display:flex;gap:32px;align-items:flex-start;justify-content:space-between;">
+        <div style="flex:1;">
+          <div
+            style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;opacity:0.75;margin-bottom:8px;">
+            Student homepage</div>
+          <h1 style="font-size:30px;font-weight:600;margin-bottom:8px;" id="hero-greeting">Welcome back 👋</h1>
+          <p style="opacity:0.85;font-size:14px;max-width:380px;line-height:1.6;">Noodle brings your courses, homework,
+            assignments, and important resources into one organised space.</p>
+          <div class="flex gap-12" style="margin-top:20px;">
+            <button class="btn btn-outline"
+              style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);color:white;"
+              onclick="document.getElementById('section-work').scrollIntoView({behavior:'smooth'})">View urgent
+              work</button>
+            <button class="btn btn-primary" style="background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.3);"
+              id="open-course-btn">Open Agile course</button>
+          </div>
+        </div>
+        <div
+          style="background:rgba(255,255,255,0.12);border-radius:var(--radius-lg);padding:20px 24px;min-width:220px;backdrop-filter:blur(4px);">
+          <div
+            style="font-size:12px;font-weight:600;opacity:0.8;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">
+            Today's focus</div>
+          <div id="focus-list"></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid"></div>
+
+      <!-- Continue learning -->
+      <div class="card flex-between" style="padding:24px 28px;margin-bottom:28px;" id="continue-card">
+        <div>
+          <div class="section-label">Continue learning</div>
+          <div style="font-size:17px;font-weight:600;margin-bottom:4px;">Topic 5: Agile Estimation and Planning Poker
+          </div>
+          <div class="text-sm text-muted">Last opened: Story points, task estimates, and sprint planning notes.</div>
+        </div>
+        <a href="student-course.html?id=c1" class="btn btn-primary">Continue</a>
+      </div>
+
+      <!-- My Courses -->
+      <div class="flex-between mb-16">
+        <div>
+          <div class="section-label">Browse courses</div>
+          <h2 class="section-title">My Courses</h2>
+        </div>
+        <input class="form-input" type="text" id="course-search" placeholder="Search courses…" oninput="filterCourses()"
+          style="max-width:220px;margin-bottom:0;">
+      </div>
+      <div class="courses-grid" id="courses-grid"></div>
+
+      <!-- Bottom 3-col -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:28px;" id="section-work">
+
+        <!-- Homework -->
+        <div class="card">
+          <div style="padding:20px 20px 16px;" class="flex-between">
+            <div>
+              <div class="section-label">Track work</div>
+              <div style="font-size:17px;font-weight:600;">Upcoming Homework</div>
+            </div>
+            <span class="badge badge-gray" id="hw-count"></span>
+          </div>
+          <div id="homework-list" style="padding:0 20px 20px;display:grid;gap:10px;"></div>
+        </div>
+
+        <!-- Assignments -->
+        <div class="card">
+          <div style="padding:20px 20px 16px;" class="flex-between">
+            <div>
+              <div class="section-label">Due soon</div>
+              <div style="font-size:17px;font-weight:600;">Assignments</div>
+            </div>
+            <span class="badge badge-red" id="assign-count"></span>
+          </div>
+          <div id="assignments-list" style="padding:0 20px 20px;display:grid;gap:10px;"></div>
+        </div>
+
+        <!-- Important resources -->
+        <div class="card">
+          <div style="padding:20px 20px 16px;" class="flex-between">
+            <div>
+              <div class="section-label">Lecturer marked</div>
+              <div style="font-size:17px;font-weight:600;">Important Resources</div>
+            </div>
+            <span class="badge badge-teal" id="resource-count"></span>
+          </div>
+          <div id="resources-list" style="padding:0 20px 20px;display:grid;gap:10px;"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .hw-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .hw-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1.5px solid var(--gray-300);
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .hw-check.done {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .res-item {
+      display: flex;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .res-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+  </style>
+
+  <script src="../js/app.js"></script>
+  <script>
+    const session = requireAuth(['student']);
+    buildNav('home');
+
+    const courses = getCourses().filter(c => c.published && session.enrolled && session.enrolled.includes(c.id));
+    const allResources = getResources();
+    const homework = getHomework();
+    const assignments = getAssignments();
+
+    // Hero
+    const firstName = session.name.split(' ')[0];
+    document.getElementById('hero-greeting').textContent = `Welcome back, ${firstName} 👋`;
+    document.getElementById('open-course-btn').onclick = () => window.location.href = 'student-course.html?id=c1';
+
+    // Focus list
+    const focusItems = homework.filter(h => !h.done).slice(0, 3);
+    const focusColors = ['#EF4444', '#F59E0B', '#22C55E'];
+    document.getElementById('focus-list').innerHTML = focusItems.map((h, i) => `
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${focusColors[i] || '#fff'};flex-shrink:0;margin-top:5px;"></div>
+      <span style="font-size:13px;opacity:0.9;">${h.title}</span>
+    </div>`).join('');
+
+    // Stats
+    const importantCount = allResources.filter(r => r.important && session.enrolled && session.enrolled.some(id => r.courseId === id)).length;
+    document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-number">${courses.length}</div><div class="stat-label">Enrolled courses</div></div>
+    <div class="stat-card"><div class="stat-number">${homework.filter(h => !h.done).length}</div><div class="stat-label">Upcoming tasks</div></div>
+    <div class="stat-card"><div class="stat-number">${assignments.length}</div><div class="stat-label">Assignments due soon</div></div>
+    <div class="stat-card"><div class="stat-number">${importantCount}</div><div class="stat-label">Important resources</div></div>
+  `;
+
+    // Courses
+    let allCourses = [...courses];
+    function filterCourses() {
+      const q = document.getElementById('course-search').value.toLowerCase();
+      const filtered = q ? allCourses.filter(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)) : allCourses;
+      renderCourses(filtered);
+    }
+    function renderCourses(list) {
+      const statusBadge = c => {
+        const cls = c.statusType === 'amber' ? 'badge-amber' : 'badge-teal';
+        return `<span class="badge ${cls}">${c.status}</span>`;
+      };
+      document.getElementById('courses-grid').innerHTML = list.map(c => `
+      <div class="course-card" onclick="window.location.href='student-course.html?id=${c.id}'">
+        <div class="flex-between mb-16" style="margin-bottom:8px;">
+          <span class="course-code">${c.code}</span>
+          ${statusBadge(c)}
+        </div>
+        <div class="course-name">${c.name}</div>
+        <div class="course-desc">${c.description}</div>
+        <div style="margin-bottom:4px;" class="text-sm text-muted">Progress</div>
+        <div class="progress-bar" style="margin-bottom:16px;">
+          <div class="progress-fill" style="width:${c.progress}%"></div>
+        </div>
+        <button class="btn btn-primary btn-sm">Open course</button>
+      </div>`).join('');
+    }
+    renderCourses(allCourses);
+
+    // Homework
+    document.getElementById('hw-count').textContent = homework.filter(h => !h.done).length + ' tasks';
+    const priorityBadge = p => {
+      if (p === 'high') return '<span class="badge badge-amber" style="font-size:10px;">High priority</span>';
+      if (p === 'soon') return '<span class="badge badge-red" style="font-size:10px;">Due soon</span>';
+      return '<span class="badge badge-gray" style="font-size:10px;">Upcoming</span>';
+    };
+    document.getElementById('homework-list').innerHTML = homework.map(h => `
+    <div class="hw-item">
+      <div class="hw-check${h.done ? ' done' : ''}" onclick="toggleHw('${h.id}',this)"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;">${h.title}</div>
+        <div class="text-sm text-muted">${h.courseCode} · ${h.due}</div>
+      </div>
+      ${priorityBadge(h.priority)}
+    </div>`).join('');
+
+    function toggleHw(id, el) {
+      el.classList.toggle('done');
+    }
+
+    // Assignments
+    document.getElementById('assign-count').textContent = assignments.length + ' items';
+    document.getElementById('assignments-list').innerHTML = assignments.map(a => `
+    <div class="hw-item">
+      <input type="checkbox" style="margin-top:2px;flex-shrink:0;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;">${a.title}</div>
+        <div class="text-sm text-muted">${a.courseCode} · ${a.due}</div>
+      </div>
+      ${priorityBadge(a.priority)}
+    </div>`).join('');
+
+    // Important resources
+    const impRes = allResources.filter(r => r.important && session.enrolled && session.enrolled.includes(r.courseId));
+    document.getElementById('resource-count').textContent = impRes.length + ' resources';
+    const typeColors = { pdf: '#7F77DD', slides: '#1D9E75', video: '#F59E0B', link: '#3B82F6' };
+    document.getElementById('resources-list').innerHTML = impRes.map(r => `
+    <div class="res-item">
+      <div class="res-dot" style="background:${typeColors[r.type] || '#9A9D96'};"></div>
+      <div>
+        <div style="font-size:13px;font-weight:500;">${r.title}</div>
+        <div class="text-sm text-muted">${r.description}</div>
+      </div>
+    </div>`).join('');
+  </script>
+</body>
+
+</html>

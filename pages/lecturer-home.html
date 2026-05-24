@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noodle — Lecturer Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="../index.html" class="nav-logo">
+    <div class="nav-logo-icon">N</div>
+    <div class="nav-logo-text">
+      <strong>Noodle</strong>
+      <span>Your learning, organised</span>
+    </div>
+  </a>
+  <div class="nav-links" id="nav-links"></div>
+  <div class="nav-right" id="nav-right"></div>
+</nav>
+
+<div class="page" style="padding:32px;">
+  <div style="max-width:1100px;margin:0 auto;">
+
+    <div class="hero-banner" style="margin-bottom:28px;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;opacity:0.75;margin-bottom:8px;">Lecturer dashboard</div>
+      <h1 style="font-size:30px;font-weight:600;margin-bottom:8px;" id="hero-greeting">Welcome back 👋</h1>
+      <p style="opacity:0.85;font-size:14px;max-width:440px;line-height:1.6;">Manage your courses, upload resources, and keep students focused on what matters.</p>
+      <div class="flex gap-12" style="margin-top:20px;">
+        <a href="lecturer-courses.html" class="btn btn-outline" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.4);color:white;">Manage courses</a>
+        <a href="lecturer-resources.html" class="btn btn-primary" style="background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.3);">Upload resource</a>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="courses-grid" id="courses-grid"></div>
+
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+  const session = requireAuth(['lecturer']);
+  buildNav('home');
+
+  const firstName = session.name.split(' ')[0];
+  document.getElementById('hero-greeting').textContent = `Welcome back, ${firstName} 👋`;
+
+  const allCourses = getCourses();
+  const myCourses = allCourses.filter(c => session.courses && session.courses.includes(c.id));
+  const allResources = getResources();
+  const myResources = allResources.filter(r => session.courses && session.courses.includes(r.courseId));
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-number">${myCourses.length}</div><div class="stat-label">My courses</div></div>
+    <div class="stat-card"><div class="stat-number">${myResources.length}</div><div class="stat-label">Total resources</div></div>
+    <div class="stat-card"><div class="stat-number">${myResources.filter(r=>r.important).length}</div><div class="stat-label">Marked important</div></div>
+    <div class="stat-card"><div class="stat-number">${myCourses.filter(c=>c.published).length}</div><div class="stat-label">Published</div></div>
+  `;
+
+  document.getElementById('courses-grid').innerHTML = myCourses.map(c => `
+    <div class="course-card" onclick="window.location.href='lecturer-course.html?id=${c.id}'">
+      <div class="flex-between" style="margin-bottom:8px;">
+        <span class="course-code">${c.code}</span>
+        <span class="badge ${c.published ? 'badge-green' : 'badge-gray'}">${c.published ? 'Published' : 'Draft'}</span>
+      </div>
+      <div class="course-name">${c.name}</div>
+      <div class="course-desc">${c.description}</div>
+      <button class="btn btn-primary btn-sm">Manage course</button>
+    </div>`).join('');
+</script>
+</body>
+</html>
