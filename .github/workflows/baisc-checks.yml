@@ -1,1 +1,36 @@
+name: Basic Project Checks
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  check-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          test -f index.html
+          test -f css/style.css
+          test -f js/app.js
+          test -f pages/student-home.html
+          test -f pages/student-course.html
+          test -f pages/lecturer-home.html
+          test -f pages/lecturer-course.html
+          test -f pages/lecturer-resources.html
+
+      - name: Check JavaScript syntax
+        run: node --check js/app.js
+
+      - name: Check important page content
+        run: |
+          grep -i "student" pages/student-home.html
+          grep -i "lecturer" pages/lecturer-home.html
+          grep -i "resource" pages/lecturer-resources.html
